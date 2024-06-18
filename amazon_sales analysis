@@ -1,0 +1,759 @@
+use amazon;
+SELECT 
+    *
+FROM
+    amazon;
+
+-- analysing product line 
+
+SELECT DISTINCT
+    product_line
+FROM
+    amazon;
+-- 6 distinct product line 
+
+
+SELECT 
+    Product_line, ROUND(SUM(Total), 2) AS Product_wise_sale
+FROM
+    amazon
+GROUP BY Product_line
+ORDER BY Product_wise_sale DESC;
+-- Food and bev have max revenue
+
+SELECT 
+    branch, SUM(total) AS total_sales_amount
+FROM
+    amazon
+GROUP BY branch
+ORDER BY total_sales_amount DESC;
+-- C >A>B
+
+
+
+SELECT 
+    Product_line,
+    branch,
+    ROUND(SUM(Total), 2) AS Product_wise_sale
+FROM
+    amazon
+GROUP BY Product_line , branch
+ORDER BY branch , Product_wise_sale DESC;
+
+-- food bev> fashion acc>  Electronic in C , 
+-- iin A home and lifstyle >sports>electr
+-- in B sports> health> home   
+-- we can thus say that home electronics, sport an food bev are imp
+
+
+
+
+-- 4. below gives total revenue and revenue from each product as a whole 
+select distinct Product_line , branch,
+round(sum(Total) over(partition by branch),2) as Total_sales_branch_wise,
+round(sum(Total) over(partition by branch, Product_line ),2) as Product_wise_sale
+from amazon order by Product_wise_sale desc ;-- similar like above
+
+
+
+SELECT 
+    product_line,
+    ROUND(SUM(gross_income), 2) AS produc_line_gross_income
+FROM
+    amazon
+GROUP BY product_line
+ORDER BY produc_line_gross_income DESC;
+
+-- top three food beb> sport> elect ( link it to beanch and product line analysis) not altering as already seen above 
+-- botton 3 health, home fashion
+
+
+SELECT 
+    product_line,
+    ROUND(SUM(gross_margin_percentage), 2) AS produc_line_grossmargin
+FROM
+    amazon
+GROUP BY product_line
+ORDER BY produc_line_grossmargin DESC;
+-- most margin in fashion>food> electronic
+
+SELECT 
+    product_line,
+    branch,
+    ROUND(SUM(gross_margin_percentage), 2) AS produc_line_grossmargin
+FROM
+    amazon
+GROUP BY product_line , branch
+ORDER BY branch , produc_line_grossmargin DESC;-- links a lot to the above product line  analysis above
+
+
+SELECT 
+    product_line, AVG(rating) AS avg_rating_for_product
+FROM
+    amazon
+GROUP BY product_line
+ORDER BY avg_rating_for_product DESC;
+-- food and bev> fash> health  
+
+
+
+SELECT 
+    product_line, rating, COUNT(rating) AS rating_count
+FROM
+    amazon
+GROUP BY product_line , rating
+ORDER BY rating DESC , rating_count DESC;
+
+
+
+
+-- 10.	Which product line incurred the highest Value Added Tax?  
+
+
+SELECT 
+    product_line, SUM(`tax_5%`) AS total_tax
+FROM
+    amazon
+GROUP BY product_line
+ORDER BY total_tax DESC;
+ -- food bev gave max tax since they are most sold too
+ 
+SELECT 
+    product_line, branch, SUM(`tax_5%`) AS total_tax
+FROM
+    amazon
+GROUP BY product_line , branch
+ORDER BY total_tax DESC;
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+-- sales and productline
+    
+    
+SELECT 
+    product_line, SUM(quantity) AS total_sales
+FROM
+    amazon
+GROUP BY product_line
+ORDER BY total_sales DESC;
+
+-- electronics> food> sports
+
+SELECT 
+    product_line, branch,
+    SUM(`tax_5%`) AS total_tax,
+    SUM(total) AS total_revenue
+FROM
+    amazon
+GROUP BY product_line, branch
+ORDER BY total_revenue DESC , total_tax DESC;
+
+
+
+
+
+
+ -- overall average of sales  in all productline 
+SELECT 
+    AVG(quantity) AS overall_avg 
+FROM
+    amazon;
+ 
+ 
+ -- lets see average sales in each product line 
+SELECT 
+    product_line,
+    AVG(quantity) AS Productwise_average_sales_quantity
+FROM
+    amazon
+GROUP BY product_line;
+
+ 
+ -- lets see product lines where avg_sales are > overall_average
+ with cte as (select product_line , avg(quantity) as Productwise_average_sales_quantity
+				from amazon
+				group by product_line)
+select product_line, Productwise_average_sales_quantity
+from cte 
+where Productwise_average_sales_quantity > (select avg(quantity) as overall_avg_quantity from amazon);
+ -- home> health> beauty have avg sales > 
+ 
+ 
+ 
+ -- using above ..we have to categorise productline under a colum that analyses performance
+ 
+ -- 1.For each product line, add a column indicating "Good" if its sales are above average, otherwise "Bad."  
+ 
+ 
+ -- add a colum product_performance
+ alter table amazon 
+ add column product_performance varchar(10);
+ 
+ 
+ 
+ 
+ -- update using conditions 
+ WITH cte AS (
+    SELECT
+        product_line,
+        AVG(quantity) AS Productwise_average_sales_amount,
+        (SELECT AVG(quantity) FROM amazon) AS overall_avg
+    FROM amazon
+    GROUP BY product_line
+)
+UPDATE amazon
+SET product_performance = 
+    CASE
+        WHEN product_line IN (
+            SELECT product_line
+            FROM cte
+            WHERE Productwise_average_sales_amount > overall_avg
+        ) THEN 'Good'
+        ELSE 'Bad'
+    END;
+    
+    
+    
+    
+    
+    
+-- on the basis of this if we want to manipulate data based on count of good and bad 
+select product_line, product_performance
+from amazon 
+group by product_performance;
+
+
+
+
+
+
+
+
+
+
+
+ -- 12.	Identify the branch that exceeded the average number of products sold.  
+SELECT 
+    *
+FROM
+    amazon;
+ 
+ -- no of items sold in each line 
+ 
+SELECT 
+    product_line, COUNT(quantity) AS product_count
+FROM
+    amazon
+GROUP BY product_line;
+ 
+ -- avg no of products sold
+ 
+SELECT 
+    product_line, quantity
+FROM
+    amazon
+WHERE
+    quantity > (SELECT 
+            AVG(quantity)
+        FROM
+            amazon);
+
+ -- lets use the query before as cte to find avg of sum of quantity
+ 
+ 
+ 
+ 
+ 
+ 
+
+SELECT 
+    Product_line, Payment, COUNT(Payment) AS count_payment
+FROM
+    amazon
+GROUP BY Product_line , Payment
+ORDER BY count_payment DESC;
+-- max cash > ewall> credit card
+
+SELECT 
+    Product_line, Payment, COUNT(Payment) AS count_payment
+FROM
+    amazon
+GROUP BY Product_line , Payment
+ORDER BY Product_line , count_payment DESC;-- this will help gather all product lines together for easy interpretation
+
+SELECT 
+    branch, Payment, COUNT(Payment) AS count_payment
+FROM
+    amazon
+GROUP BY branch , Payment
+ORDER BY branch , count_payment DESC;
+
+-- A ewall> cash > cred  B ewall>cash  C cash> ewall ( so ewall and cash is imp as ewall is most pref but cash is most pref in C branch where rev is max
+
+SELECT 
+    branch,
+    Product_line,
+    Payment,
+    COUNT(Payment) AS count_payment
+FROM
+    amazon
+GROUP BY branch , Product_line , Payment
+ORDER BY branch , Product_line , count_payment DESC;
+
+-- electronics, sports, home , food bev must be focus to increase revenue thus ease of payment
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SELECT 
+    *
+FROM
+    amazon;
+SELECT 
+    MONTHNAME(date) AS Monthlyrev,
+    ROUND(SUM(total), 2) AS totalrev_monthwise
+FROM
+    amazon
+GROUP BY Monthlyrev
+ORDER BY Monthlyrev DESC;
+
+-- max revenue  in march
+
+
+
+SELECT 
+    branch,
+    ROUND(SUM(total), 2) AS totalrev_datewise,
+    MONTHNAME(date) AS Monthlyrev
+FROM
+    amazon
+GROUP BY Monthlyrev , branch
+ORDER BY totalrev_datewise DESC;
+
+-- lets add product line  dimentsion in it
+SELECT 
+    product_line,
+    ROUND(SUM(total), 2) AS totalrev_datewise,
+    MONTHNAME(date) AS Monthlyrev
+FROM
+    amazon
+GROUP BY Monthlyrev , product_line
+ORDER BY totalrev_datewise DESC;-- can add  product line in order by to get a window kind of thing 
+
+
+SELECT 
+    *
+FROM
+    amazon;
+SELECT 
+    MONTHNAME(date) AS Monthlyrev,
+    SUM(quantity) AS totalsales_monthwise
+FROM
+    amazon
+GROUP BY Monthlyrev
+ORDER BY totalsales_monthwise DESC;
+
+-- max quant sold in jam 
+
+SELECT 
+    MONTHNAME(date) AS monthn,
+    SUM(cogs) AS monthwise_cost_of_good_sold
+FROM
+    amazon
+GROUP BY monthn
+ORDER BY monthwise_cost_of_good_sold DESC;
+-- january foll by march, feb
+
+
+-- adding time to the time column 
+-- wewant to add permanentaly so we use alter table command
+alter table amazon
+add column time_of_day varchar(20);
+
+
+-- since we need to add three labels based on conditions 
+UPDATE amazon 
+SET 
+    time_of_day = CASE
+        WHEN time < 12 THEN 'morning'
+        WHEN time >= 12 AND time < 16 THEN 'afternoon'
+        ELSE 'evening'
+    END;
+
+
+use amazon;
+-- EXPLORING LINK BETWEEN TINE OF DAY AND revenue
+select distinct date, time_of_day,  
+sum(total) over (partition by date) as Total_day_rev,
+sum(total) over(partition by date, time_of_day)  as Interday_rev_distribution   
+ -- here partitioning by date and time is essential else the query is just paritioning acc full total only in 3 parts
+from amazon
+order by date , Interday_rev_distribution desc;
+
+-- total rev is for 1st jan is 4745  and contri of each duration of day is given too , which is max for afternoon 
+-- see graph
+
+
+SELECT 
+    weekday, time_of_day, COUNT(quantity) AS sales
+FROM
+    amazon
+GROUP BY time_of_day , weekday
+ORDER BY weekday , sales DESC;
+
+
+SELECT 
+    date, time_of_day, SUM(total) AS total
+FROM
+    amazon
+GROUP BY date , time_of_day
+ORDER BY date , total DESC;
+-- more optimised and interpretable as it is givign same output also more customisable as  branch and product lines can be added 
+
+
+SELECT 
+    branch, date, time_of_day, SUM(total) AS total
+FROM
+    amazon
+GROUP BY branch , date , time_of_day
+ORDER BY date , total DESC;
+
+-- on first jan A is best perfornming in afternoon
+
+
+-- using the lead adn lag functions on date and further weekday and time of day
+use amazon;
+select * from amazon;
+
+select date, sum(total) as daily_revenue,
+lead(date) over(order by date) nxt, 
+
+from amazon 
+group by date;
+
+
+
+-- showing the culumative revenue
+SELECT
+    date, city,
+   
+    SUM(total) AS daily_revenue,
+    
+    SUM(SUM(total)) OVER (partition by city ORDER BY date) AS cumulative_revenue
+FROM amazon
+GROUP BY date, city;
+
+
+-- diference betweeen previous and next revenue 
+with cte as (
+select date , city,
+SUM(total) AS daily_revenue 
+FROM amazon
+GROUP BY date, city)
+select date , city, (daily_revenue - lag(daily_revenue) over (partition by city order by date)) as subsequent_rev_difference
+from cte;
+
+
+-- lets do teh same for week 
+SELECT
+    weekday, branch,
+   
+    SUM(total) AS weekly_revenue,
+    
+    SUM(SUM(total)) OVER (partition by branch ORDER BY weekday) AS cumulative_weekly_revenue
+FROM amazon
+GROUP BY weekday, branch;
+
+
+-- diference betweeen previous and next weekday revenue 
+with cte as (
+SELECT
+    weekday, branch,
+   
+    SUM(total) AS weekly_revenue
+FROM amazon
+GROUP BY weekday, branch)
+
+select weekday , branch, (weekly_revenue - lag(weekly_revenue) over (partition by branch order by weekday)) as subsequent_weekday_rev_difference
+from cte;
+
+
+
+
+SELECT 
+    time_of_day, COUNT(rating) AS rating_count
+FROM
+    amazon
+GROUP BY time_of_day
+ORDER BY rating_count DESC;
+
+-- most rating in evening 
+
+
+SELECT 
+    time_of_day, AVG(rating) AS rating_avg
+FROM
+    amazon
+GROUP BY time_of_day
+ORDER BY rating_avg DESC;
+
+-- ratign avg is max in afternoon least in evenign implies quality problems maybe or the proportion of people rating dec as total number increases
+
+SELECT 
+    time_of_day, rating, COUNT(rating) AS rating_count
+FROM
+    amazon
+GROUP BY time_of_day , rating
+ORDER BY time_of_day , rating DESC , rating_count DESC;
+-- in afternoon we get max rating 10 but once 
+
+
+SELECT 
+    branch, time_of_day, COUNT(rating) AS rating_count
+FROM
+    amazon
+GROUP BY branch , time_of_day
+ORDER BY branch , rating_count DESC;
+
+-- for A max rating in evening > noon> mor
+-- b eve>noon>mor
+-- c eve>noon> mor C  is also best performign  in specific product lien so probably that product can be sold more with specific payment option 
+-- and customer gender be targeted 
+
+SELECT 
+    product_line, time_of_day, COUNT(rating) AS rating_count
+FROM
+    amazon
+GROUP BY product_line , time_of_day
+ORDER BY product_line , rating_count DESC;
+
+-- home is best rated in evening 
+
+
+
+
+-- adding another column for weekdays 
+alter table amazon
+add column weekday varchar(20);
+UPDATE amazon 
+SET 
+    weekday = DAYNAME(date);
+ 
+ -- days when revenue is max 
+SELECT 
+    *
+FROM
+    amazon;
+ 
+SELECT 
+    weekday, SUM(total) AS total_rev
+FROM
+    amazon
+GROUP BY weekday
+ORDER BY total_rev DESC;
+
+-- sat >tues> thrusday>sun
+
+SELECT 
+    weekday, AVG(rating) AS daywise_rating_avg
+FROM
+    amazon
+GROUP BY weekday
+ORDER BY daywise_rating_avg DESC;
+-- highest avg rating on monday
+
+SELECT 
+    branch, weekday, AVG(rating) AS daywise_rating_avg
+FROM
+    amazon
+GROUP BY branch , weekday
+ORDER BY branch , daywise_rating_avg DESC;
+-- in A branch fri has max avg ratign , for b its monday, c its friday
+
+
+
+
+SELECT 
+    product_line, weekday, SUM(total) AS total_rev
+FROM
+    amazon
+GROUP BY weekday , product_line
+ORDER BY product_line , total_rev DESC;
+-- elect max on thrusday, we already know from above that foobev, home , electr are best sold items so can make day wise stragtegy from there
+-- additionally payment modes can be combined 
+
+
+
+SELECT 
+    product_line, branch, weekday, SUM(total) AS total_rev
+FROM
+    amazon
+GROUP BY weekday , product_line , branch
+ORDER BY product_line , branch , total_rev DESC;
+
+-- here more detailed view of which productline has revenue distribution in each day of the week 
+
+SELECT 
+    MONTHNAME(date) AS month, cogs
+FROM
+    amazon
+ORDER BY cogs DESC;
+-- cost of goods sold was max in feb
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- GENDER ,REGIONAND CTYPE ANALYSIS 
+
+
+
+SELECT DISTINCT
+    city
+FROM
+    amazon;
+
+-- 23.	Determine the predominant gender among customers.-
+SELECT 
+    gender, COUNT(*) AS gender_count
+FROM
+    amazon
+GROUP BY gender;
+-- female dominate as customers slightly
+
+
+
+
+
+SELECT 
+    branch, gender, COUNT(*) AS branchwise_gender_count
+FROM
+    amazon
+GROUP BY branch , gender
+ORDER BY branch , branchwise_gender_count DESC;
+
+-- in A branch make are more , b make, c female
+
+
+SELECT 
+    city, branch, COUNT(branch) AS branch_count
+FROM
+    amazon
+GROUP BY city , branch
+ORDER BY branch_count DESC;-- multiple branches in a city so count brabnch group by city but one city has one branch only
+-- yangon has max branches  we already know that C has max rev so despite min branches rev is max
+
+
+SELECT 
+    city, branch, gender, SUM(total) AS total_revenue
+FROM
+    amazon
+GROUP BY city , branch , gender
+ORDER BY city , total_revenue DESC;
+-- in B -Mandalay male > female,  C- nayp F>M , A- Yangon M>F  in number
+
+SELECT 
+    branch, product_line, gender, SUM(total) AS total_revenue
+FROM
+    amazon
+GROUP BY branch , product_line , gender
+ORDER BY branch , total_revenue DESC;
+
+
+-- adding C-type and gender 
+SELECT 
+    city,
+    gender,
+    Customer_type,
+    COUNT(Customer_type) AS cust_preference_count
+FROM
+    amazon
+GROUP BY city , gender , Customer_type
+ORDER BY city , cust_preference_count DESC;
+-- Nap is max revenue and femalae cust with membership are max so strategy can be built to target these 
+
+SELECT 
+    customer_type, SUM(total) AS customer_type_wise_revenue
+FROM
+    amazon
+GROUP BY customer_type
+ORDER BY customer_type_wise_revenue DESC;
+-- peoplewiht membership have max revenue
+
+
+SELECT 
+    city, gender, customer_type, SUM(total) AS gender_wise_rev
+FROM
+    amazon
+GROUP BY city , gender , customer_type
+ORDER BY city , gender_wise_rev DESC;
+
+
+
+-- in mandaly male and femmale with memebership
+-- in Naypythaw female menmber and normal are high
+
+
+
+SELECT 
+    customer_type, SUM(`tax_5%`) AS customer_type_wise_tax
+FROM
+    amazon
+GROUP BY customer_type
+ORDER BY customer_type_wise_tax DESC;
+-- membership ones pay slightlymore taxes
+
+SELECT 
+    customer_type,
+    SUM(quantity) AS customer_type_wise_purchasing
+FROM
+    amazon
+GROUP BY customer_type
+ORDER BY customer_type_wise_purchasing DESC;
+
+-- memebers have bought more
+
+
+SELECT 
+    product_line, gender, COUNT(rating) AS rating_count
+FROM
+    amazon
+GROUP BY product_line , gender
+ORDER BY product_line , rating_count DESC;
+
+
+
+-- gross revenue distribution among gender in each branch branch wise 
+SELECT 
+    branch, gender, SUM(gross_income) AS gross_revenue
+FROM
+    amazon
+GROUP BY branch , gender
+ORDER BY gross_revenue DESC;
